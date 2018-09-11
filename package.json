@@ -1,0 +1,49 @@
+{
+  "name": "hubot-wechat-better",
+  "version": "0.0.1",
+  "description": "Hubot adapter for wechat",
+  "main": "./src/wechat.js",
+  "scripts": {
+    "start": "bin/hubot",
+    "link": "npm link ../hubot-wechat-better",
+    "eslint": "eslint .eslintrc.js ./ --ignore-path .eslintignore --fix",
+    "test": "node_modules\\.bin\\mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/loveonelong/hubot-wechat-better.git"
+  },
+  "keywords": [
+    "hubot",
+    "adapter",
+    "wechat",
+    "weixin",
+    "wechat hubot",
+    "hubot wechat",
+    "hubot wechat better"
+  ],
+  "author": "onelong <love@onelong.org>",
+  "contributors": [
+    "onelong <love@onelong.org> (https://www.onelong.org)"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/loveonelong/hubot-wechat-better/issues"
+  },
+  "homepage": "https://github.com//loveonelong/hubot-wechat-better",
+  "dependencies": {
+    "hubot": "^3.1.1",
+    "qrcode-terminal": "^0.12.0",
+    "wechat4u": "^0.7.6"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "eslint": "^5.5.0",
+    "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-node": "^7.0.1",
+    "eslint-plugin-promise": "^4.0.0",
+    "eslint-plugin-standard": "^4.0.0",
+    "mocha": "^5.2.0"
+  }
+}
