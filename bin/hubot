@@ -4,7 +4,4 @@ set -e
 
 export PATH="node_modules/.bin:node_modules/hubot/node_modules/.bin:$PATH"
 
-# config
-export ADMINER_EMAIL="youremail@example.com"
-
-exec node_modules/.bin/hubot -a wechat-better --name bot "$@"
+exec node_modules/.bin/hubot -a wechat-better --name wechat-bot "$@"
