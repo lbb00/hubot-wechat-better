@@ -6,10 +6,21 @@ Adapt with hubot using wechat robot [wechat4u](https://github.com/nodeWechat/wec
 
 ## Configuration
 
-You need add a bot.config.js in your root filder of bot project. It must to export a json config.
+You need add a `bot.config.js` in your root filder of bot project. It must to export a json config.
 
 ```javascript
-
+{
+  botemail: {
+    host: 'smtp.example.com',
+    port: 587,
+    secure: false, // true for 465, false for other ports
+    auth: {
+        user: 'user', // 'user@example.com'
+        pass: 'password'
+    }
+  },
+  adminerEmail: 'admin@example.com'
+}
 ```
 
 ## Development
