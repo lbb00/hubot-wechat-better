@@ -1,6 +1,8 @@
 
+// Wechat Bot: https://github.com/nodeWechat/wechat4u
+
 const { Adapter, TextMessage, CatchAllMessage, User } = require('hubot/es2015')
-const WechatBot = require('wechat4u') // https://github.com/nodeWechat/wechat4u
+const WechatBot = require('wechat4u')
 const fs = require('fs')
 const path = require('path')
 const qrcodeTerminal = require('qrcode-terminal')
@@ -25,12 +27,56 @@ class WechatAdapter extends Adapter {
         this.robot.logger.info(`Sending message to room: ${envelope.room}`)
       })
       .catch(err => {
-        this.emit('error', err)
+        this.robot.logger.error(`Sending message to room: ${envelope.room} ${err}`)
       })
   }
 
   replay (envelope, ...strings) {
     this.send(envelope, ...strings)
+  }
+
+  call (msg, { rule, type = 'all', reg = true, once = false } = {}) {
+    // type all | group | user
+
+    let contacts = this.wechatBot.contacts
+    let envelopes = []
+
+    let ids = Object.keys(contacts)
+
+    // filter rooms
+    switch (type) {
+      case 'group':
+        ids = ids.filter(id => !!id.match(/^@@/))
+        break
+      case 'user':
+        ids = ids.filter(id => !id.match(/^@@/))
+    }
+
+    if (rule === undefined || rule === null) {
+      ids.map(id => {
+        let roomName = contacts[id].getDisplayName()
+        envelopes.push({ room: roomName, user: { _id: id } })
+      })
+    } else {
+      let matcher = typeof rule === 'function' ? rule : roomName => {
+        return reg ? roomName.match(rule) : roomName === rule
+      }
+
+      let len = ids.length
+      while (len--) {
+        let id = ids[len]
+        let roomName = contacts[id].getDisplayName()
+        if (matcher(roomName)) {
+          envelopes.push({ room: roomName, user: { _id: id } })
+          if (once) break
+        }
+      }
+    }
+
+    envelopes.map(i => {
+      console.log(i.room)
+      this.send(i, msg)
+    })
   }
 
   wechatBotRun ({ reRun } = {}) {
@@ -42,8 +88,7 @@ class WechatAdapter extends Adapter {
           if (e.tips === '微信初始化失败') {
             this.wechatBotRun({ reRun: true })
           } else {
-            this.emit('error', '微信机器人初始化失败')
-            this.robot.logger.info(e)
+            this.robot.logger.error(e)
           }
         })
       } catch (e) {

@@ -8,19 +8,19 @@ Adapt with hubot using wechat robot [wechat4u](https://github.com/nodeWechat/wec
 
 First, you need clone this repo to your local.
 
-**install package**
+install package
 
 ```bash
 npm install
 ```
 
-**link**
+link
 
 ```bash
 npm run link
 ```
 
-**run**
+run
 
 ```bash
 npm start
