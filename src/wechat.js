@@ -6,6 +6,15 @@ const WechatBot = require('wechat4u')
 const fs = require('fs')
 const path = require('path')
 const qrcodeTerminal = require('qrcode-terminal')
+const botemail = require('./botemail')
+
+// get adminer email
+let ADMINER_EMAIL
+try {
+  ADMINER_EMAIL = require(path.resolve(process.cwd(), './bot.config.js')).adminerEmail
+} catch (e) {
+  ADMINER_EMAIL = ''
+}
 
 class WechatAdapter extends Adapter {
   constructor () {
@@ -112,7 +121,7 @@ class WechatAdapter extends Adapter {
     }
 
     // bind event
-    this.wechatBot.on('uuid', this.qrcodeLogin)
+    this.wechatBot.on('uuid', this.qrcodeLogin.bind(this))
     this.wechatBot.on('login', () => {
       this.emit('connected')
       this.robot.logger.info(`Wechat Bot Login Successed...`)
@@ -185,13 +194,25 @@ class WechatAdapter extends Adapter {
   }
 
   qrcodeLogin (uuid) {
-    qrcodeTerminal.generate('https://login.weixin.qq.com/l/' + uuid, {
+    let imageUrl = 'https://login.weixin.qq.com/qrcode/' + uuid // image
+    let terminalUrl = 'https://login.weixin.qq.com/l/' + uuid // wechat scan url, only be used once
+
+    // terminal
+    qrcodeTerminal.generate(terminalUrl, {
       small: true
     }, (qrcode) => {
-      console.log(qrcode)
-      if (this.adminer_email) {
-        // TODO: send email to adminer
-      }
+      this.robot.logger.info('\n' + qrcode)
+    })
+
+    // email
+    botemail.send({
+      to: ADMINER_EMAIL,
+      subject: 'hubot 微信机器人扫码登录',
+      html: `二维码:<br/><img src="${imageUrl}" />`
+    }).then(res => {
+      this.robot.logger.info('Email send login qrcode successed!')
+    }).catch(e => {
+      this.robot.logger.error(`Email send login qrcode error: ${e}`)
     })
   }
 }

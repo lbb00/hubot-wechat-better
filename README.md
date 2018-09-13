@@ -4,6 +4,14 @@
 
 Adapt with hubot using wechat robot [wechat4u](https://github.com/nodeWechat/wechat4u).
 
+## Configuration
+
+You need add a bot.config.js in your root filder of bot project. It must to export a json config.
+
+```javascript
+
+```
+
 ## Development
 
 First, you need clone this repo to your local.
