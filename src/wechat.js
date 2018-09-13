@@ -35,21 +35,27 @@ class WechatAdapter extends Adapter {
     this.send(envelope, ...strings)
   }
 
+  /**
+   * Sending messages proactively
+   *
+   *
+   * @param {any} msg
+   * @param {any} [{ rule, type = 'all'|'group'|'friend', reg = true, once = false }={}]
+   * @memberof WechatAdapter
+   */
   call (msg, { rule, type = 'all', reg = true, once = false } = {}) {
-    // type all | group | user
-
     let contacts = this.wechatBot.contacts
     let envelopes = []
 
     let ids = Object.keys(contacts)
 
-    // filter rooms
+    // Filter ids by type, and exclude official accounts.
     switch (type) {
       case 'group':
-        ids = ids.filter(id => !!id.match(/^@@/))
+        ids = ids.filter(id => id.match(/^@@/) && contacts[id].isPublicContact())
         break
-      case 'user':
-        ids = ids.filter(id => !id.match(/^@@/))
+      case 'friend':
+        ids = ids.filter(id => !id.match(/^@@/) && contacts[id].isPublicContact())
     }
 
     if (rule === undefined || rule === null) {
@@ -74,7 +80,7 @@ class WechatAdapter extends Adapter {
     }
 
     envelopes.map(i => {
-      console.log(i.room)
+      this.robot.logger.info(`Sending message proactively to: ${i.room}.`)
       this.send(i, msg)
     })
   }
@@ -126,11 +132,12 @@ class WechatAdapter extends Adapter {
   createUser (contact, msg) {
     let opts, targetUser
     opts = {
-      room: contact.getDisplayName(msg.FromUserName),
-      _id: msg.FromUserName // User it when reply message
+      room: contact.getDisplayName(msg.FromUserName), // Get the real name.
+      _id: msg.FromUserName // User it when reply message.
     }
 
     if (msg.FromUserName.match(/^@@/)) {
+      // Get target user from  message of group.
       targetUser = msg.Content.slice(0, msg.Content.indexOf(':'))
       opts.id = targetUser
       opts.name = targetUser
@@ -146,8 +153,8 @@ class WechatAdapter extends Adapter {
     let bot = this.wechatBot
     let contact = bot.contacts[msg.FromUserName]
 
-    // is self
-    if (contact.isSelf) return
+    // Exclude bot's self and official accounts.
+    if (contact.isSelf || contact.isPublicContact()) return
 
     let user = this.createUser(contact, msg)
     switch (msg.MsgType) {
