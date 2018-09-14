@@ -47,7 +47,6 @@ class WechatAdapter extends Adapter {
   /**
    * Sending messages proactively
    *
-   *
    * @param {any} msg
    * @param {any} [{ rule, type = 'all'|'group'|'friend', reg = true, once = false }={}]
    * @memberof WechatAdapter
@@ -95,25 +94,17 @@ class WechatAdapter extends Adapter {
   }
 
   wechatBotRun ({ reRun } = {}) {
-    // init wechat bot
+    // wechat bot init
     if (!reRun) {
       try {
         this.wechatBot = new WechatBot(require(path.resolve(process.cwd(), './loginToken.json')))
-        this.wechatBot.on('error', e => {
-          if (e.tips === '微信初始化失败') {
-            this.wechatBotRun({ reRun: true })
-          } else {
-            this.robot.logger.error(e)
-          }
-        })
       } catch (e) {
-        this.wechatBot = new WechatBot()
+        this.wechatBotRun({ reRun: true })
       }
     } else {
       this.wechatBot = new WechatBot()
     }
 
-    // start
     if (this.wechatBot.PROP.uin) {
       this.wechatBot.restart()
     } else {
@@ -121,20 +112,24 @@ class WechatAdapter extends Adapter {
     }
 
     // bind event
+    this.wechatBot.on('error', err => {
+      this.robot.logger.error(err)
+      if (err.tips === '微信初始化失败') {
+        this.wechatBotRun({ reRun: true })
+      }
+      if (err.tips === '获取手机确认登录信息失败') {
+        throw new Error('获取手机确认登录信息失败')
+      }
+    })
     this.wechatBot.on('uuid', this.qrcodeLogin.bind(this))
     this.wechatBot.on('login', () => {
       this.emit('connected')
       this.robot.logger.info(`Wechat Bot Login Successed...`)
-
-      // catch login file
+      // login token file
       fs.writeFileSync(path.resolve(process.cwd(), './loginToken.json'), JSON.stringify(this.wechatBot.botData))
 
       this.wechatBot.on('message', this.handlerMessage.bind(this))
     })
-    this.wechatBot.on('error', err => {
-      this.robot.logger.error(err)
-    })
-
     this.robot.logger.info(`Wechat Bot Adapter Started...`)
   }
 
