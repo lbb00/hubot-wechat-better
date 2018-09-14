@@ -61,10 +61,10 @@ class WechatAdapter extends Adapter {
     // Filter ids by type, and exclude official accounts.
     switch (type) {
       case 'group':
-        ids = ids.filter(id => id.match(/^@@/) && contacts[id].isPublicContact())
+        ids = ids.filter(id => id.match(/^@@/) && !this.wechatBot.Contact.isPublicContact(contacts[id]))
         break
       case 'friend':
-        ids = ids.filter(id => !id.match(/^@@/) && contacts[id].isPublicContact())
+        ids = ids.filter(id => !id.match(/^@@/) && !this.wechatBot.Contact.isPublicContact(contacts[id]))
     }
 
     if (rule === undefined || rule === null) {
@@ -163,7 +163,7 @@ class WechatAdapter extends Adapter {
     let contact = bot.contacts[msg.FromUserName]
 
     // Exclude bot's self and official accounts.
-    if (contact.isSelf || contact.isPublicContact()) return
+    if (contact.isSelf || bot.Contact.isPublicContact(contact)) return
 
     let user = this.createUser(contact, msg)
     switch (msg.MsgType) {
