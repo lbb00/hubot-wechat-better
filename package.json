@@ -1,6 +1,6 @@
 {
   "name": "hubot-wechat-better",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Hubot adapter for wechat",
   "main": "./src/wechat.js",
   "scripts": {
