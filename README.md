@@ -1,6 +1,6 @@
 # hubot-wechat-better
 
-[![Build Status](https://travis-ci.org/loveonelong/hubot-wechat-better.svg?branch=master)](https://travis-ci.org/loveonelong/hubot-wechat-better)
+[![Build Status](https://travis-ci.org/loveonelong/hubot-wechat-better.svg?branch=master)](https://travis-ci.org/loveonelong/hubot-wechat-better) [![Greenkeeper badge](https://badges.greenkeeper.io/loveonelong/hubot-wechat-better.svg)](https://greenkeeper.io/)
 
 Adapt with hubot using wechat robot [wechat4u](https://github.com/nodeWechat/wechat4u).
 
