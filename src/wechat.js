@@ -100,6 +100,7 @@ class WechatAdapter extends Adapter {
         this.wechatBot = new WechatBot(require(path.resolve(process.cwd(), './loginToken.json')))
       } catch (e) {
         this.wechatBotRun({ reRun: true })
+        return
       }
     } else {
       this.wechatBot = new WechatBot()
