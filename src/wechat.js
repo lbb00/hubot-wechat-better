@@ -124,6 +124,11 @@ class WechatAdapter extends Adapter {
     })
     this.wechatBot.on('uuid', this.qrcodeLogin.bind(this))
     this.wechatBot.on('login', () => {
+      let wechatNickName = this.wechatBot.user.NickName
+      if (this.robot.name !== wechatNickName) {
+        this.robot.name = wechatNickName
+      }
+
       this.emit('connected')
       this.robot.logger.info(`Wechat Bot Login Successed...`)
       // login token file
