@@ -245,7 +245,13 @@ class WechatAdapter extends Adapter {
   }
 
   restart () {
-    this.wechatBotRun()
+    try {
+      this.wechatBot.stop()
+    } catch (e) {
+      this.robot.logger.error(e)
+    } finally {
+      this.wechatBotRun()
+    }
   }
 }
 
