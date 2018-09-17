@@ -6,7 +6,7 @@
   "scripts": {
     "start": "bin/hubot",
     "link": "npm link ../hubot-wechat-better",
-    "eslint": "eslint --fix",
+    "eslint": "eslint --fix ./",
     "test": "mocha"
   },
   "repository": {
