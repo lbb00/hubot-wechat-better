@@ -40,7 +40,7 @@ class WechatAdapter extends Adapter {
       })
   }
 
-  replay (envelope, ...strings) {
+  reply (envelope, ...strings) {
     this.send(envelope, ...strings)
   }
 
@@ -128,7 +128,6 @@ class WechatAdapter extends Adapter {
       if (this.robot.name !== wechatNickName) {
         this.robot.name = wechatNickName
       }
-
       this.emit('connected')
       this.robot.logger.info(`Wechat Bot Login Successed...`)
       // login token file
@@ -169,9 +168,37 @@ class WechatAdapter extends Adapter {
     let user = this.createUser(contact, msg)
     switch (msg.MsgType) {
       case bot.CONF.MSGTYPE_TEXT:
-        this.robot.logger.info(user.name)
-        this.receive(new TextMessage(user, msg.Content, msg.MsgId))
-        return
+        this.robot.logger.info(msg.Content)
+
+        // Fix hubot cannot checkt @bot
+        let content = msg.Content.slice(msg.Content.indexOf(':\n') + 2)
+        let atSign = `@${this.robot.name}`
+
+        new Promise((resolve, reject) => {
+          if (content.match(atSign)) {
+            content = `${atSign} ${content.replace(atSign, '')}`
+            resolve()
+          } else if (msg.FromUserName.match(/^@@/)) {
+            this.wechatBot.batchGetContact([{ UserName: msg.ToUserName, EncryChatRoomId: msg.FromUserName }])
+              .then(res => {
+                let alias = res[0].DisplayName
+                // The bot has alias name in the group
+                if (alias !== this.robot.name) {
+                  let atAliasSign = `@${alias}`
+                  if (content.match(atAliasSign)) {
+                    content = `${atSign} ${content.replace(atAliasSign, '')}`
+                  }
+                }
+                resolve()
+              })
+              .catch(reject)
+          }
+        }).then(() => {
+          this.receive(new TextMessage(user, content, msg.MsgId))
+        }).catch(e => {
+          this.robot.logger.error(e)
+        })
+        break
       case bot.CONF.MSGTYPE_IMAGE:
         this.robot.logger.debug('图片消息')
         break
@@ -189,7 +216,7 @@ class WechatAdapter extends Adapter {
         this.robot.logger.debug('文件消息')
         break
       default:
-        this.receive(new CatchAllMessage(user, msg.Content, msg.MsgId))
+        // this.receive(new CatchAllMessage(user, msg.Content, msg.MsgId))
         break
     }
   }
@@ -217,4 +244,5 @@ class WechatAdapter extends Adapter {
     })
   }
 }
+
 exports.use = robot => new WechatAdapter(robot)

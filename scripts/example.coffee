@@ -1,7 +1,10 @@
 module.exports = (robot) ->
 
-  robot.hear /my bot/, (res) ->
+  # Simple message
+  robot.hear /bot/, (res) ->
     res.send('Is me')
 
-  robot.respond /my bot/, (res) ->
-    res.send('I am here')
+  # @ message
+  robot.respond /bot/, (res) ->
+    console.log 'bobobobobo'
+    res.reply('I am here')

@@ -23,6 +23,10 @@ You need add a `bot.config.js` in your root filder of bot project. It must to ex
 }
 ```
 
+## Useage
+
+You can look `scripts/example.coffee`
+
 ## Development
 
 First, you need clone this repo to your local.
