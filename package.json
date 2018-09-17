@@ -6,8 +6,8 @@
   "scripts": {
     "start": "bin/hubot",
     "link": "npm link ../hubot-wechat-better",
-    "eslint": "eslint .eslintrc.js ./ --ignore-path .eslintignore --fix",
-    "test": "node_modules\\.bin\\mocha"
+    "eslint": "eslint --fix",
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
