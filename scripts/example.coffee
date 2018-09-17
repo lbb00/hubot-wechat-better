@@ -6,5 +6,4 @@ module.exports = (robot) ->
 
   # @ message
   robot.respond /bot/, (res) ->
-    console.log 'bobobobobo'
     res.reply('I am here')

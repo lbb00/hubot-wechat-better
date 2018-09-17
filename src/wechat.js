@@ -1,7 +1,7 @@
 
 // Wechat Bot: https://github.com/nodeWechat/wechat4u
 
-const { Adapter, TextMessage, CatchAllMessage, User } = require('hubot/es2015')
+const { Adapter, TextMessage, User } = require('hubot/es2015')
 const WechatBot = require('wechat4u')
 const fs = require('fs')
 const path = require('path')
