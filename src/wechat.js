@@ -243,6 +243,10 @@ class WechatAdapter extends Adapter {
       this.robot.logger.error(`Email send login qrcode error: ${e}`)
     })
   }
+
+  restart () {
+    this.wechatBotRun()
+  }
 }
 
 exports.use = robot => new WechatAdapter(robot)
