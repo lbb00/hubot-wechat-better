@@ -41,11 +41,11 @@ class WechatAdapter extends Adapter {
    * Push messages
    *
    * @param {any} msg
-   * @param {any} [{ rule, type = 'all'|'group'|'friend', reg = true, once = false }={}]
+   * @param {any} [{ rule, type = 'all'|'group'|'friend', reg = true}={}]
    * @returns Promise
    * @memberof WechatAdapter
    */
-  push (msg, { rule, type = 'all', reg = true, once = false } = {}) {
+  push (msg, { rule, type = 'all', reg = true } = {}) {
     return new Promise((resolve, reject) => {
       let contacts = this.wechatBot.contacts
       let envelopes = []
@@ -73,16 +73,12 @@ class WechatAdapter extends Adapter {
         let matcher = typeof rule === 'function' ? rule : roomName => {
           return reg ? roomName.match(rule) : roomName === rule
         }
-
-        let len = ids.length
-        while (len--) {
-          let id = ids[len]
+        ids.forEach(id => {
           let roomName = contacts[id].getDisplayName()
           if (matcher(roomName)) {
             envelopes.push({ room: roomName, user: { _id: id } })
-            if (once) break
           }
-        }
+        })
       }
       envelopes.map(i => {
         this.robot.logger.info(`Sending message proactively to: ${i.room}.`)

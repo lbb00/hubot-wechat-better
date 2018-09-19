@@ -18,7 +18,7 @@ module.exports = robot => {
     // Adapter.push(message, config)
     //
     // message - string
-    // config - [{ rule, type = 'all'|'group'|'friend', reg = true, once = false }={}]
+    // config - [{ rule, type = 'all'|'group'|'friend', reg = true}={}]
     robot.adapter.push(`${new Date()} This is a push.`, {
       rule: name => {
         return name.match('文件传输助手')
