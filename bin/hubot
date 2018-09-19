@@ -3,5 +3,6 @@
 set -e
 
 export PATH="node_modules/.bin:node_modules/hubot/node_modules/.bin:$PATH"
+export PORT=8090
 
-exec node_modules/.bin/hubot -a wechat-better --name onelong "$@"
+exec node_modules/.bin/hubot -a wechat-better "$@"

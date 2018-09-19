@@ -1,10 +1,29 @@
 # hubot-wechat-better
 
-[![Build Status](https://travis-ci.org/loveonelong/hubot-wechat-better.svg?branch=master)](https://travis-ci.org/loveonelong/hubot-wechat-better) [![Greenkeeper badge](https://badges.greenkeeper.io/loveonelong/hubot-wechat-better.svg)](https://greenkeeper.io/)
+[![Build Status](https://travis-ci.org/loveonelong/hubot-wechat-better.svg?branch=master)](https://travis-ci.org/loveonelong/hubot-wechat-better)
+[![Greenkeeper badge](https://badges.greenkeeper.io/loveonelong/hubot-wechat-better.svg)](https://greenkeeper.io/)
+![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg)
+[![Version](https://img.shields.io/npm/v/hubot-wechat-better.svg)](https://www.npmjs.com/package/hubot-wechat-better)
+[![Github All Releases](https://img.shields.io/npm/dt/hubot-wechat-better.svg)](https://www.npmjs.com/package/hubot-wechat-better)
 
 Adapt with hubot using wechat robot [wechat4u](https://github.com/nodeWechat/wechat4u).
 
-## Configuration
+## Support
+
+* nodejs 8+
+* hubot 3+
+
+## Usage
+
+The bot will automatically use the nickname of WeChat.
+
+### Install
+
+```bash
+npm install hubot-wechat-better
+```
+
+### Configuration
 
 You need add a `bot.config.js` in your root filder of bot project. It must to export a json config.
 
@@ -23,36 +42,34 @@ You need add a `bot.config.js` in your root filder of bot project. It must to ex
 }
 ```
 
-## Useage
+### Run
 
-You can look `scripts/example.coffee`
+Use `hubot -a wechat-better` to start bot in your hubot porject.
+
+## Example
+
+You can look `scripts/example.js`
 
 ## Development
 
-First, you need clone this repo to your local.
+The first, you need clone this repo to your local.
 
-install package
+- install modules
 
 ```bash
 npm install
 ```
 
-link
+- link
 
 ```bash
 npm run link
 ```
 
-run
+- run example
 
 ```bash
 npm start
-```
-
-or
-
-```bash
-bin/hubot
 ```
 
 ## Test

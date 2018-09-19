@@ -8,7 +8,7 @@ const path = require('path')
 const qrcodeTerminal = require('qrcode-terminal')
 const botemail = require('./botemail')
 
-// get adminer email
+// Get adminer email
 let ADMINER_EMAIL
 try {
   ADMINER_EMAIL = require(path.resolve(process.cwd(), './bot.config.js')).adminerEmail
@@ -17,13 +17,6 @@ try {
 }
 
 class WechatAdapter extends Adapter {
-  constructor () {
-    super(...arguments)
-
-    // config
-    this.ADMINER_EMAIL = process.env['ADMINER_EMAIL'] || ''
-  }
-
   run (...args) {
     this.wechatBotRun(...args)
   }
@@ -45,56 +38,63 @@ class WechatAdapter extends Adapter {
   }
 
   /**
-   * Sending messages proactively
+   * Push messages
    *
    * @param {any} msg
    * @param {any} [{ rule, type = 'all'|'group'|'friend', reg = true, once = false }={}]
+   * @returns Promise
    * @memberof WechatAdapter
    */
-  call (msg, { rule, type = 'all', reg = true, once = false } = {}) {
-    let contacts = this.wechatBot.contacts
-    let envelopes = []
+  push (msg, { rule, type = 'all', reg = true, once = false } = {}) {
+    return new Promise((resolve, reject) => {
+      let contacts = this.wechatBot.contacts
+      let envelopes = []
 
-    let ids = Object.keys(contacts)
+      let ids = Object.keys(contacts)
 
-    // Filter ids by type, and exclude official accounts.
-    switch (type) {
-      case 'group':
-        ids = ids.filter(id => id.match(/^@@/) && !this.wechatBot.Contact.isPublicContact(contacts[id]))
-        break
-      case 'friend':
-        ids = ids.filter(id => !id.match(/^@@/) && !this.wechatBot.Contact.isPublicContact(contacts[id]))
-    }
-
-    if (rule === undefined || rule === null) {
-      ids.map(id => {
-        let roomName = contacts[id].getDisplayName()
-        envelopes.push({ room: roomName, user: { _id: id } })
-      })
-    } else {
-      let matcher = typeof rule === 'function' ? rule : roomName => {
-        return reg ? roomName.match(rule) : roomName === rule
+      // Filter ids by type, and exclude official accounts.
+      switch (type) {
+        case 'group':
+          ids = ids.filter(id => id.match(/^@@/) && !this.wechatBot.Contact.isPublicContact(contacts[id]))
+          break
+        case 'friend':
+          ids = ids.filter(id => !id.match(/^@@/) && !this.wechatBot.Contact.isPublicContact(contacts[id]))
+          break
+        default:
+          ids = ids.filter(id => !this.wechatBot.Contact.isPublicContact(contacts[id]))
       }
 
-      let len = ids.length
-      while (len--) {
-        let id = ids[len]
-        let roomName = contacts[id].getDisplayName()
-        if (matcher(roomName)) {
+      if (rule === undefined || rule === null) {
+        ids.map(id => {
+          let roomName = contacts[id].getDisplayName()
           envelopes.push({ room: roomName, user: { _id: id } })
-          if (once) break
+        })
+      } else {
+        let matcher = typeof rule === 'function' ? rule : roomName => {
+          return reg ? roomName.match(rule) : roomName === rule
+        }
+
+        let len = ids.length
+        while (len--) {
+          let id = ids[len]
+          let roomName = contacts[id].getDisplayName()
+          if (matcher(roomName)) {
+            envelopes.push({ room: roomName, user: { _id: id } })
+            if (once) break
+          }
         }
       }
-    }
+      envelopes.map(i => {
+        this.robot.logger.info(`Sending message proactively to: ${i.room}.`)
+        this.send(i, msg)
+      })
 
-    envelopes.map(i => {
-      this.robot.logger.info(`Sending message proactively to: ${i.room}.`)
-      this.send(i, msg)
+      resolve(msg)
     })
   }
 
   wechatBotRun ({ reRun } = {}) {
-    // wechat bot init
+    // Wechat bot init
     if (!reRun) {
       try {
         this.wechatBot = new WechatBot(require(path.resolve(process.cwd(), './loginToken.json')))
@@ -112,7 +112,7 @@ class WechatAdapter extends Adapter {
       this.wechatBot.start()
     }
 
-    // bind event
+    // Bind events
     this.wechatBot.on('error', err => {
       this.robot.logger.error(err)
       if (err.tips === '微信初始化失败') {
@@ -130,7 +130,8 @@ class WechatAdapter extends Adapter {
       }
       this.emit('connected')
       this.robot.logger.info(`Wechat Bot Login Successed...`)
-      // login token file
+
+      // Save login token file
       fs.writeFileSync(path.resolve(process.cwd(), './loginToken.json'), JSON.stringify(this.wechatBot.botData))
 
       this.wechatBot.on('message', this.handlerMessage.bind(this))
@@ -141,8 +142,10 @@ class WechatAdapter extends Adapter {
   createUser (contact, msg) {
     let opts, targetUser
     opts = {
-      room: contact.getDisplayName(msg.FromUserName), // Get the real name.
-      _id: msg.FromUserName // User it when reply message.
+      // Get the real name
+      room: contact.getDisplayName(msg.FromUserName),
+      // User it when reply message
+      id: msg.FromUserName
     }
 
     if (msg.FromUserName.match(/^@@/)) {
@@ -162,7 +165,7 @@ class WechatAdapter extends Adapter {
     let bot = this.wechatBot
     let contact = bot.contacts[msg.FromUserName]
 
-    // Exclude bot's self and official accounts.
+    // Exclude bot's self message and official account.
     if (contact.isSelf || bot.Contact.isPublicContact(contact)) return
 
     let user = this.createUser(contact, msg)
@@ -170,7 +173,7 @@ class WechatAdapter extends Adapter {
       case bot.CONF.MSGTYPE_TEXT:
         this.robot.logger.info(msg.Content)
 
-        // Fix hubot cannot checkt @bot
+        // Fix hubot cannot check someone mentioned your robot
         let content = msg.Content.slice(msg.Content.indexOf(':\n') + 2)
         let atSign = `@${this.robot.name}`
 
@@ -216,23 +219,27 @@ class WechatAdapter extends Adapter {
         this.robot.logger.debug('文件消息')
         break
       default:
+        // TODO:
         // this.receive(new CatchAllMessage(user, msg.Content, msg.MsgId))
         break
     }
   }
 
   qrcodeLogin (uuid) {
-    let imageUrl = 'https://login.weixin.qq.com/qrcode/' + uuid // image
-    let terminalUrl = 'https://login.weixin.qq.com/l/' + uuid // wechat scan url, only be used once
+    // qrcode image url
+    let imageUrl = 'https://login.weixin.qq.com/qrcode/' + uuid
 
-    // terminal
-    qrcodeTerminal.generate(terminalUrl, {
+    // Login url in qrcode image
+    let targetUrl = 'https://login.weixin.qq.com/l/' + uuid
+
+    // Generate qrcode in terminal
+    qrcodeTerminal.generate(targetUrl, {
       small: true
     }, (qrcode) => {
       this.robot.logger.info('\n' + qrcode)
     })
 
-    // email
+    // Send qrcode to adminer email
     botemail.send({
       to: ADMINER_EMAIL,
       subject: 'hubot 微信机器人扫码登录',
@@ -245,13 +252,10 @@ class WechatAdapter extends Adapter {
   }
 
   restart () {
-    try {
-      this.wechatBot.stop()
-    } catch (e) {
-      this.robot.logger.error(e)
-    } finally {
-      this.wechatBotRun()
-    }
+    return new Promise((resolve, reject) => {
+      this.wechatBot.restart()
+      resolve()
+    })
   }
 }
 
