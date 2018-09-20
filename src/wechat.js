@@ -165,15 +165,21 @@ class WechatAdapter extends Adapter {
     switch (msg.MsgType) {
       case bot.CONF.MSGTYPE_TEXT:
         this.robot.logger.info(msg.Content)
+        this.robot.logger.info(msg.Content)
 
         // Fix hubot cannot check someone mentioned your robot
+        // I.e. hubot just check metion in message head
+        // E.g. @bot xxxx
         let content = msg.Content.slice(msg.Content.indexOf(':\n') + 2)
+        let atSign = `@${this.robot.name}`
 
         new Promise((resolve, reject) => {
-          if (msg.FromUserName.match(/^@@/)) {
+          if (content.match(atSign)) {
+            content = `${atSign} ${content.replace(atSign, '')}`
+            resolve()
+          } else if (msg.FromUserName.match(/^@@/)) {
             this.wechatBot.batchGetContact([{ UserName: msg.ToUserName, EncryChatRoomId: msg.FromUserName }])
               .then(res => {
-                let atSign = `@${this.robot.name}`
                 let alias = res[0].DisplayName
                 // The bot has alias name in the group
                 if (alias !== this.robot.name) {
@@ -185,8 +191,6 @@ class WechatAdapter extends Adapter {
                 resolve()
               })
               .catch(reject)
-          } else {
-            resolve()
           }
         }).then(() => {
           this.receive(new TextMessage(user, content, msg.MsgId))
