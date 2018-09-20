@@ -24,7 +24,7 @@ class WechatAdapter extends Adapter {
   send (envelope, ...strings) {
     const text = strings.join()
     let bot = this.wechatBot
-    bot.sendMsg(text, envelope.user._id)
+    bot.sendMsg(text, envelope.user.id)
       .then(res => {
         this.robot.logger.info(`Sending message to room: ${envelope.room}`)
       })
@@ -124,13 +124,14 @@ class WechatAdapter extends Adapter {
       if (this.robot.name !== wechatNickName) {
         this.robot.name = wechatNickName
       }
-      this.emit('connected')
+
       this.robot.logger.info(`Wechat Bot Login Successed...`)
 
       // Save login token file
       fs.writeFileSync(path.resolve(process.cwd(), './loginToken.json'), JSON.stringify(this.wechatBot.botData))
-
       this.wechatBot.on('message', this.handlerMessage.bind(this))
+
+      this.emit('connected')
     })
     this.robot.logger.info(`Wechat Bot Adapter Started...`)
   }
@@ -139,19 +140,15 @@ class WechatAdapter extends Adapter {
     let opts, targetUser
     opts = {
       // Get the real name
-      room: contact.getDisplayName(msg.FromUserName),
-      // User it when reply message
-      id: msg.FromUserName
+      room: contact.getDisplayName(msg.FromUserName)
     }
 
     if (msg.FromUserName.match(/^@@/)) {
       // Get target user from  message of group.
       targetUser = msg.Content.slice(0, msg.Content.indexOf(':'))
-      opts.id = targetUser
       opts.name = targetUser
     } else {
       targetUser = contact.getDisplayName()
-      opts.id = targetUser
       opts.name = targetUser
     }
     return new User(msg.FromUserName, opts)
@@ -171,15 +168,12 @@ class WechatAdapter extends Adapter {
 
         // Fix hubot cannot check someone mentioned your robot
         let content = msg.Content.slice(msg.Content.indexOf(':\n') + 2)
-        let atSign = `@${this.robot.name}`
 
         new Promise((resolve, reject) => {
-          if (content.match(atSign)) {
-            content = `${atSign} ${content.replace(atSign, '')}`
-            resolve()
-          } else if (msg.FromUserName.match(/^@@/)) {
+          if (msg.FromUserName.match(/^@@/)) {
             this.wechatBot.batchGetContact([{ UserName: msg.ToUserName, EncryChatRoomId: msg.FromUserName }])
               .then(res => {
+                let atSign = `@${this.robot.name}`
                 let alias = res[0].DisplayName
                 // The bot has alias name in the group
                 if (alias !== this.robot.name) {
@@ -191,6 +185,8 @@ class WechatAdapter extends Adapter {
                 resolve()
               })
               .catch(reject)
+          } else {
+            resolve()
           }
         }).then(() => {
           this.receive(new TextMessage(user, content, msg.MsgId))
