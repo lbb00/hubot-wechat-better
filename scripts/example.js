@@ -1,12 +1,12 @@
 module.exports = robot => {
   // General message
   robot.hear(/bot/, res => {
-    res.send('Is me.')
+    res.send('Hear, Is me.')
   })
 
   // The message with mentioned your wechat bot
   robot.respond(/bot/, res => {
-    res.reply('I am here.')
+    res.reply('Replay, I am here.')
   })
 
   // If you want to use the following example, you must have learned the webhook of the hubot.

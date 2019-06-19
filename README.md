@@ -10,12 +10,12 @@ Adapt with hubot using wechat robot [wechat4u](https://github.com/nodeWechat/wec
 
 ## Support
 
-* nodejs 8+
-* hubot 3+
+- nodejs v10+
+- hubot v3
 
 ## Usage
 
-The bot will automatically use the nickname of WeChat.
+The bot will automatically use the WeChat nickname as botname.
 
 ### Install
 
@@ -25,17 +25,17 @@ npm install hubot-wechat-better
 
 ### Configuration
 
-You need add a `bot.config.js` in your root filder of bot project. It must to export a json config.
+You must to add a `bot.config.js` in root filder of your hubot project. It should to export json.
 
 ```javascript
-{
+module.exports = {
   botemail: {
     host: 'smtp.example.com',
     port: 587,
     secure: false, // true for 465, false for other ports
     auth: {
-        user: 'user', // 'user@example.com'
-        pass: 'password'
+      user: 'user', // 'user@example.com'
+      pass: 'password'
     }
   },
   adminerEmail: 'admin@example.com'
@@ -44,7 +44,7 @@ You need add a `bot.config.js` in your root filder of bot project. It must to ex
 
 ### Run
 
-Use `hubot -a wechat-better` to start bot in your hubot porject.
+Use `hubot -a wechat-better` to start bot.
 
 ## Example
 
@@ -52,7 +52,7 @@ You can look `scripts/example.js`
 
 ## Development
 
-The first, you need clone this repo to your local.
+The first, clone this repo to local.
 
 - install modules
 

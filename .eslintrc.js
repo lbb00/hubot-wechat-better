@@ -1,12 +1,13 @@
 module.exports = {
-	root: true,
-	extends: 'standard',
-	rules:{
-		camelcase: 0,
-		nodeprecatedapi: 0
-	},
-	globals: {
-		describe: false,
-		it: false
-	}
+  env: {
+    node: true
+  },
+  extends: ['standard'],
+  rules: {
+    'no-undef': 2
+  },
+  globals: {
+    describe: false,
+    it: false
+  }
 }

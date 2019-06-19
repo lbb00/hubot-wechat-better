@@ -1,4 +1,3 @@
-
 // Wechat Bot: https://github.com/nodeWechat/wechat4u
 
 const { Adapter, TextMessage, User } = require('hubot/es2015')
@@ -8,7 +7,7 @@ const path = require('path')
 const qrcodeTerminal = require('qrcode-terminal')
 const botemail = require('./botemail')
 
-// Get adminer email
+// Get Administrator email
 let ADMINER_EMAIL
 try {
   ADMINER_EMAIL = require(path.resolve(process.cwd(), './bot.config.js')).adminerEmail
@@ -21,10 +20,62 @@ class WechatAdapter extends Adapter {
     this.wechatBotRun(...args)
   }
 
+  wechatBotRun ({ reRun } = {}) {
+    // Wechat bot init
+    if (!reRun) {
+      try {
+        this.wechatBot = new WechatBot(require(path.resolve(process.cwd(), './loginToken.json')))
+      } catch (e) {
+        this.wechatBotRun({ reRun: true })
+        return
+      }
+    } else {
+      this.robot.logger.info('重启wechatBot')
+      this.wechatBot = new WechatBot()
+    }
+
+    // Bind events
+    this.wechatBot.on('error', err => {
+      // TODO: refactor
+      this.robot.logger.error(err)
+      if (err.tips === '微信初始化失败') {
+        this.wechatBotRun({ reRun: true })
+      }
+      if (err.tips === '获取手机确认登录信息失败') {
+        throw new Error('获取手机确认登录信息失败')
+      }
+    })
+    this.wechatBot.on('uuid', this.qrcodeLogin.bind(this))
+    this.wechatBot.on('login', () => {
+      let wechatNickName = this.wechatBot.user.NickName
+      if (this.robot.name !== wechatNickName) {
+        this.robot.name = wechatNickName
+      }
+
+      this.robot.logger.info(`Wechat Bot Login Successed...`)
+
+      // Save login token file
+      fs.writeFileSync(path.resolve(process.cwd(), './loginToken.json'), JSON.stringify(this.wechatBot.botData))
+      this.wechatBot.on('message', this.handlerMessage.bind(this))
+
+      this.emit('connected')
+    })
+
+    // start
+    if (this.wechatBot.PROP.uin) {
+      this.wechatBot.restart()
+    } else {
+      this.wechatBot.start()
+    }
+
+    this.robot.logger.info(`Wechat Bot Adapter Started...`)
+  }
+
   send (envelope, ...strings) {
     const text = strings.join()
     let bot = this.wechatBot
-    bot.sendMsg(text, envelope.user.id)
+    bot
+      .sendMsg(text, envelope.user.id)
       .then(res => {
         this.robot.logger.info(`Sending message to room: ${envelope.room}`)
       })
@@ -70,9 +121,12 @@ class WechatAdapter extends Adapter {
           envelopes.push({ room: roomName, user: { _id: id } })
         })
       } else {
-        let matcher = typeof rule === 'function' ? rule : roomName => {
-          return reg ? roomName.match(rule) : roomName === rule
-        }
+        let matcher =
+          typeof rule === 'function'
+            ? rule
+            : roomName => {
+              return reg ? roomName.match(rule) : roomName === rule
+            }
         ids.forEach(id => {
           let roomName = contacts[id].getDisplayName()
           if (matcher(roomName)) {
@@ -87,53 +141,6 @@ class WechatAdapter extends Adapter {
 
       resolve(msg)
     })
-  }
-
-  wechatBotRun ({ reRun } = {}) {
-    // Wechat bot init
-    if (!reRun) {
-      try {
-        this.wechatBot = new WechatBot(require(path.resolve(process.cwd(), './loginToken.json')))
-      } catch (e) {
-        this.wechatBotRun({ reRun: true })
-        return
-      }
-    } else {
-      this.wechatBot = new WechatBot()
-    }
-
-    if (this.wechatBot.PROP.uin) {
-      this.wechatBot.restart()
-    } else {
-      this.wechatBot.start()
-    }
-
-    // Bind events
-    this.wechatBot.on('error', err => {
-      this.robot.logger.error(err)
-      if (err.tips === '微信初始化失败') {
-        this.wechatBotRun({ reRun: true })
-      }
-      if (err.tips === '获取手机确认登录信息失败') {
-        throw new Error('获取手机确认登录信息失败')
-      }
-    })
-    this.wechatBot.on('uuid', this.qrcodeLogin.bind(this))
-    this.wechatBot.on('login', () => {
-      let wechatNickName = this.wechatBot.user.NickName
-      if (this.robot.name !== wechatNickName) {
-        this.robot.name = wechatNickName
-      }
-
-      this.robot.logger.info(`Wechat Bot Login Successed...`)
-
-      // Save login token file
-      fs.writeFileSync(path.resolve(process.cwd(), './loginToken.json'), JSON.stringify(this.wechatBot.botData))
-      this.wechatBot.on('message', this.handlerMessage.bind(this))
-
-      this.emit('connected')
-    })
-    this.robot.logger.info(`Wechat Bot Adapter Started...`)
   }
 
   createUser (contact, msg) {
@@ -154,49 +161,44 @@ class WechatAdapter extends Adapter {
     return new User(msg.FromUserName, opts)
   }
 
-  handlerMessage (msg) {
-    let bot = this.wechatBot
-    let contact = bot.contacts[msg.FromUserName]
+  async handlerMessage (msg) {
+    const bot = this.wechatBot
+    const contact = bot.contacts[msg.FromUserName]
 
     // Exclude bot's self message and official account.
     if (contact.isSelf || bot.Contact.isPublicContact(contact)) return
 
-    let user = this.createUser(contact, msg)
+    const user = this.createUser(contact, msg)
     switch (msg.MsgType) {
       case bot.CONF.MSGTYPE_TEXT:
         this.robot.logger.info(msg.Content)
-        this.robot.logger.info(msg.Content)
 
-        // Fix hubot cannot check someone mentioned your robot
-        // I.e. hubot just check metion in message head
-        // E.g. @bot xxxx
-        let content = msg.Content.slice(msg.Content.indexOf(':\n') + 2)
-        let atSign = `@${this.robot.name}`
+        let msgContent = msg.Content
+        let atBotNameSignReg = new RegExp(`@${this.robot.name}`)
 
-        new Promise((resolve, reject) => {
-          if (content.match(atSign)) {
-            content = `${atSign} ${content.replace(atSign, '')}`
-            resolve()
-          } else if (msg.FromUserName.match(/^@@/)) {
-            this.wechatBot.batchGetContact([{ UserName: msg.ToUserName, EncryChatRoomId: msg.FromUserName }])
-              .then(res => {
-                let alias = res[0].DisplayName
-                // The bot has alias name in the group
-                if (alias !== this.robot.name) {
-                  let atAliasSign = `@${alias}`
-                  if (content.match(atAliasSign)) {
-                    content = `${atSign} ${content.replace(atAliasSign, '')}`
-                  }
-                }
-                resolve()
-              })
-              .catch(reject)
+        if (msg.FromUserName.match(/^@@/)) {
+          // Group msg like 'fromUserNickeName:\n msgcontent'
+          // Get clean msg content
+          msgContent = msg.Content.slice(msg.Content.indexOf(':\n') + 2)
+          try {
+            // Maybe the bot  has alias name in the group
+            const res = await this.wechatBot.batchGetContact([
+              { UserName: msg.ToUserName, EncryChatRoomId: msg.FromUserName }
+            ])
+            const aliasName = res[0].DisplayName
+            if (aliasName !== this.robot.name) {
+              atBotNameSignReg = new RegExp(`@${this.robot.name}|@${aliasName}`)
+            }
+          } catch (e) {
+            this.robot.logger.error(e)
           }
-        }).then(() => {
-          this.receive(new TextMessage(user, content, msg.MsgId))
-        }).catch(e => {
-          this.robot.logger.error(e)
-        })
+        }
+
+        // Fix hobut just match bot name in message header.
+        if (msgContent.match(atBotNameSignReg)) {
+          msgContent = `${this.robot.name} ${msgContent.replace(atBotNameSignReg, '')}`
+        }
+        this.receive(new TextMessage(user, msgContent, msg.MsgId))
         break
       case bot.CONF.MSGTYPE_IMAGE:
         this.robot.logger.debug('图片消息')
@@ -229,22 +231,29 @@ class WechatAdapter extends Adapter {
     let targetUrl = 'https://login.weixin.qq.com/l/' + uuid
 
     // Generate qrcode in terminal
-    qrcodeTerminal.generate(targetUrl, {
-      small: true
-    }, (qrcode) => {
-      this.robot.logger.info('\n' + qrcode)
-    })
+    qrcodeTerminal.generate(
+      targetUrl,
+      {
+        small: true
+      },
+      qrcode => {
+        this.robot.logger.info('\n' + qrcode)
+      }
+    )
 
     // Send qrcode to adminer email
-    botemail.send({
-      to: ADMINER_EMAIL,
-      subject: 'hubot 微信机器人扫码登录',
-      html: `二维码:<br/><img src="${imageUrl}" />`
-    }).then(res => {
-      this.robot.logger.info('Email send login qrcode successed!')
-    }).catch(e => {
-      this.robot.logger.error(`Email send login qrcode error: ${e}`)
-    })
+    botemail
+      .send({
+        to: ADMINER_EMAIL,
+        subject: 'hubot 微信机器人扫码登录',
+        html: `二维码:<br/><img src="${imageUrl}" />`
+      })
+      .then(res => {
+        this.robot.logger.info('Email send login qrcode successed!')
+      })
+      .catch(e => {
+        this.robot.logger.error(`Email send login qrcode error: ${e}`)
+      })
   }
 
   restart () {
